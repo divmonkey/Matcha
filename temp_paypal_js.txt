@@ -1,0 +1,90 @@
+/* ─── PAYPAL CHECKOUT ───────────────────────────────────── */
+async function initPayPal() {
+  try {
+    const res = await fetch('/api/config');
+    const config = await res.json();
+    paypalConfigured = config.paypalConfigured;
+    paypalClientId = config.paypalClientId;
+
+    if (paypalConfigured && paypalClientId) {
+      await loadPayPalScript(paypalClientId);
+    }
+  } catch (e) {
+    console.warn('PayPal config unavailable:', e);
+  }
+}
+
+function loadPayPalScript(clientId) {
+  return new Promise((resolve, reject) => {
+    if (document.getElementById('paypal-sdk')) { resolve(); return; }
+    const script = document.createElement('script');
+    script.id = 'paypal-sdk';
+    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture`;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+function renderPayPalButton() {
+  const container = document.getElementById('paypal-button-container');
+  if (!container || !window.paypal) return;
+  container.innerHTML = `
+    <div style="margin-bottom:15px;">
+        <label for="checkoutEmail" style="display:block; font-size:0.85rem; color:var(--c-bark); margin-bottom:5px;">Your Email (For Order Status)</label>
+        <input type="email" id="checkoutEmail" placeholder="customer@email.com" style="width:100%; padding:10px; border:1px solid #D6CEC0; border-radius:4px; font-family:inherit;">
+    </div>
+  `;
+  const btnContainer = document.createElement('div');
+  container.appendChild(btnContainer);
+
+  window.paypal.Buttons({
+    style: { layout: 'vertical', color: 'gold', shape: 'pill', label: 'paypal' },
+    createOrder: async (data, actions) => {
+      const email = document.getElementById('checkoutEmail').value;
+      if (!email || !email.includes('@')) {
+        showToast('Please enter a valid email address');
+        throw new Error('Invalid email');
+      }
+      
+      const items = cart.map(i => ({ name: i.name, price: i.price, qty: i.qty }));
+      const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+      try {
+        const res = await fetch('/api/create-paypal-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items, total, customerEmail: email })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to create order');
+        return data.orderID;
+      } catch (err) {
+        showToast('Checkout error: ' + err.message);
+        throw err;
+      }
+    },
+    onApprove: async (data) => {
+      const email = document.getElementById('checkoutEmail').value;
+      try {
+        const res = await fetch('/api/capture-paypal-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderID: data.orderID, customerEmail: email })
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'Capture failed');
+
+        cart = [];
+        updateCartUI();
+        closeCart();
+        showOrderSuccess(result.order);
+      } catch (err) {
+        showToast('Payment failed: ' + err.message);
+      }
+    },
+    onError: (err) => {
+      console.error('PayPal error:', err);
+      showToast('PayPal checkout error. Please try again.');
+    }
+  }).render(btnContainer);
+}

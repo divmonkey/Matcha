@@ -1,0 +1,130 @@
+================================================================================
+MATCHA BOOK: SCALABLE ORDER MANAGEMENT SYSTEM (OPTION B)
+================================================================================
+
+PHASE 1: ADMIN PANEL ENHANCEMENTS
+================================================================================
+
+[X] 1.1 Order Status Management
+    [X] Create backend endpoint: PUT /api/orders/:id/status
+    [X] Update order status in orders.json
+    [X] Record status change timestamp
+    [X] Make status badges clickable dropdown in admin dashboard
+    [X] Add dropdown options: pending, completed, shipped, delivered
+    [X] Update UI to reflect new status after save
+
+[X] 1.2 Order Search & Filter
+    [X] Add search box at top of orders table
+    [X] Implement real-time filter by Order ID
+    [X] Implement real-time filter by customer name
+    [X] Implement real-time filter by customer email
+    [X] Add status filter dropdown
+    [X] Update table to show filtered results
+
+[X] 1.3 Order Detail Modal
+    [X] Create modal/detail panel component
+    [X] Show Order ID, customer name, email, address
+    [X] Show payment method, items, total, status, creation date
+    [X] Add "Resend Confirmation Email" button
+    [X] Add "Update Status" button linked to 1.1
+    [X] Make order rows clickable to open modal
+
+[X] 1.4 CSV Export
+    [X] Add "Export Orders" button to admin dashboard
+    [X] Export visible/filtered orders as CSV
+    [X] Include columns: Order ID, Customer, Email, Items, Total, Status, Date
+    [X] Trigger download on user action
+
+
+PHASE 2: CUSTOMER ORDER TRACKING PANEL
+================================================================================
+
+[X] 2.1 Customer Dashboard Page
+    [X] Create /customer/order-status.html
+    [X] Build simple lookup form (Order ID + Email input)
+    [X] Style matching existing Matcha design
+    [X] Add submit button to retrieve order
+
+[X] 2.2 Customer Order Display
+    [X] Display order details: ID, items, total, status
+    [X] Create status timeline visual (Ordered → Shipped → Delivered)
+    [X] Show creation date and last status update date
+    [X] Placeholder for tracking link/info when shipped
+    [X] Handle "order not found" error state gracefully
+
+[X] 2.3 Backend API Endpoints (New)
+    [X] Create GET /api/orders/lookup endpoint
+    [X] Query params: orderId + email
+    [X] Return order only if BOTH orderId AND email match
+    [X] Prevent unauthorized order lookups
+    [X] Return appropriate error messages
+
+
+PHASE 3: ENHANCED NOTIFICATIONS
+================================================================================
+
+[X] 3.1 Email on Status Change
+    [X] Create email template for status change notifications
+    [X] Send email when admin updates order status
+    [X] Include order ID in email subject
+    [X] Include new status in email body
+    [X] Include tracking info if status = shipped
+    [X] Log email send attempts
+
+[X] 3.2 Resend Confirmation
+    [X] Link resend button in order detail modal (1.3)
+    [X] Resend original confirmation email to customer
+    [X] Show confirmation message when email sent
+    [X] Handle email failures gracefully
+
+
+PHASE 4: DATA MODEL UPDATES
+================================================================================
+
+[X] 4.1 Expand orders.json Structure
+    [X] Add 'address' field to order schema
+    [X] Add 'paymentMethod' field
+    [X] Add 'shippingTrackingUrl' field
+    [X] Add 'statusHistory' array (track all status changes with timestamps)
+    [X] Ensure backward compatibility with existing orders
+
+[X] 4.2 Order Status Enum
+    [X] Define status values: pending, completed, shipped, delivered, refunded
+    [X] Document status flow in code
+    [X] Update validation logic
+
+
+PHASE 5: SUPABASE MIGRATION
+================================================================================
+- [ ] Initialize Supabase project & configure client in index.js
+- [ ] Define Supabase table schemas (customers, orders)
+- [ ] Enable RLS on Supabase tables
+- [ ] Create data migration script (JSON to Supabase)
+- [ ] Execute data migration script
+- [ ] Refactor backend APIs to use Supabase client
+- [ ] Update frontend to use Supabase client (if applicable for reads/writes)
+- [ ] Cleanup legacy JSON files
+
+IMPLEMENTATION SEQUENCE
+================================================================================
+
+COMPLETED:
+1. Phase 4 (Data Model) - foundation
+2. Phase 3.1 (Status Change Emails) - backend infrastructure
+3. Phase 1.1 (Admin Status Management) - core admin feature
+4. Phase 1.2 (Search & Filter) - admin usability
+5. Phase 1.3 (Order Detail Modal) - admin detail view
+6. Phase 2.3 (Customer Lookup API) - customer panel backend
+7. Phase 2.1 (Customer Dashboard Page) - customer UI
+8. Phase 2.2 (Customer Order Display) - customer detail view
+9. Phase 1.4 (CSV Export) - admin export feature
+10. Phase 3.2 (Resend Confirmation) - polish
+11. **Implemented Refund System** (backend API, admin trigger, PayPal integration)
+12. **Added Admin Dashboard Order Cleanup** ("Delete All Orders" button)
+
+NOTES
+================================================================================
+- Transitioned from JSON file storage to Supabase for core data. (This is a future item that is planned)
+- Refund system implemented and verified via PayPal sandbox.
+- Admin and Client dashboards now have order deletion capabilities.
+- Supabase migration is the next major focus.

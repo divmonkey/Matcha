@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matcha Book Store - Project Structure</title>
+    <style>
+        :root {
+            --primary: #3A9D6B;
+            --secondary: #6B8E7D;
+            --bg: #F8FAF8;
+            --card-bg: #FFFFFF;
+            --text: #2C3E50;
+            --code-bg: #1E293B;
+            --code-text: #E2E8F0;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            text-align: center;
+            padding: 2rem 0;
+            border-bottom: 3px solid var(--primary);
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            color: var(--primary);
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: var(--secondary);
+            font-size: 1.1rem;
+        }
+        
+        .section {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h2 {
+            color: var(--primary);
+            border-left: 4px solid var(--primary);
+            padding-left: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        h3 {
+            color: var(--secondary);
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        ul {
+            list-style-position: inside;
+            margin-left: 1.5rem;
+        }
+        
+        li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .tech-card {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1rem;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        pre {
+            background: var(--code-bg);
+            color: var(--code-text);
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: var(--secondary);
+            color: white;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin: 0.2rem;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--secondary);
+            border-top: 1px solid #ddd;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍵 Matcha Book Store</h1>
+            <p class="subtitle">Modern Minimalist Matcha eCommerce Platform</p>
+            <p><strong>Project Structure • AI-Native Monorepo • Django + Node.js</strong></p>
+        </header>
+
+        <!-- TECH STACK SECTION -->
+        <section class="section">
+            <h2>⚙️ Technology Stack</h2>
+            <div class="tech-stack">
+                <div class="tech-card"><h3>Frontend</h3><p>Node.js + Tailwind CSS</p></div>
+                <div class="tech-card"><h3>Backend</h3><p>Django (Python)</p></div>
+                <div class="tech-card"><h3>Database</h3><p>PostgreSQL</p></div>
+                <div class="tech-card"><h3>Icons</h3><p>Heroicons Outline + SVG</p></div>
+                <div class="tech-card"><h3>Images</h3><p>uifaces.co API</p></div>
+                <div class="tech-card"><h3>Admin</h3><p>Django Unfold (Open Source)</p></div>
+            </div>
+        </section>
+
+        <!-- CORE RULES SECTION -->
+        <section class="section">
+            <h2>✅ Core Rules (rules.md)</h2>
+            <ul>
+                <li><strong>Mobile-First Design</strong> - Responsive for all devices</li>
+                <li><strong>Tailwind CSS Only</strong> - No custom CSS files</li>
+                <li><strong>Precision Units</strong> - Use px units, not rem</li>
+                <li><strong>Icon System</strong> - Heroicons Outline + Geometric SVGs from svgrepo.com</li>
+                <li><strong>Human Faces</strong> - Filtered by gender via uifaces.co API</li>
+                <li><strong>No Leaks</strong> - Frontend cannot touch Django models directly</li>
+                <li><strong>Image Optimization</strong> - All images validated for size & alt tags</li>
+            </ul>
+        </section>
+
+        <!-- PROJECT STRUCTURE SECTION -->
+        <section class="section">
+            <h2>📂 Complete Directory Structure</h2>
+            <pre>
+matcha-book-store/
+├── README.md                      # 📘 Project Overview & Setup Guide
+├── rules.md                       # ✅ Core Rules - All Agents Must Follow
+├── .ai/                           # 🔧 AI Automation Hub
+│   ├── hooks/
+│   │   ├── lint-ui.sh             # Validates Tailwind class compliance
+│   │   ├── check-assets.sh        # Flags oversized images, missing alt tags
+│   │   └── block-backend-leak.sh  # Prevents frontend/Django model conflicts
+│   │
+│   ├── skills/
+│   │   ├── generate-admin-section/  # Outputs admin UI HTML/CSS
+│   │   ├── create-drf-endpoint/     # Generates Serializer/View/URL
+│   │   └── validate-accessibility/  # Checks aria-labels, focus states
+│   │
+│   ├── agents/
+│   │   ├── admin-agent.md         # Manages product/order/customer workflows
+│   │   ├── analytics-agent.md     # Sales reports & financial tracking
+│   │   ├── content-agent.md       # Blog & CMS management
+│   │   └── settings-agent.md      # User roles, SEO, API keys
+│   │
+│   └── commands/
+│       └── setup-admin-panel.md   # One-command full stack setup
+│
+├── backend/                       # 🐍 Django Backend
+│   ├── manage.py
+│   ├── config/                    # Project settings
+│   ├── apps/
+│   │   ├── products/              # Product CRUD operations
+│   │   ├── orders/                # Order processing & status
+│   │   ├── customers/             # User accounts & history
+│   │   ├── sales/                 # Reports, revenue, analytics
+│   │   ├── content/               # Blog, testimonials, banners
+│   │   └── admin_ui/              # Django Admin + Unfold customization
+│   │
+│   ├── migrations/
+│   ├── models/
+│   ├── serializers/               # DRF Serializers
+│   ├── views/                     # API Endpoints
+│   └── urls/                      # URL Routing
+│
+├── frontend/                      # ⚛️ Node.js Frontend
+│   ├── src/
+│   │   ├── components/            # Reusable UI Blocks
+│   │   │   ├── Button/
+│   │   │   ├── Card/
+│   │   │   ├── Input/
+│   │   │   └── ProductGrid/
+│   │   ├── pages/                 # Page-level Layouts
+│   │   │   ├── HomePage/
+│   │   │   ├── ProductPage/
+│   │   │   ├── CheckoutPage/
+│   │   │   └── AdminDashboard/
+│   │   └── assets/
+│   │       ├── icons/             # Heroicons Outline (inline SVG)
+│   │       ├── shapes/            # Geometric SVGs from svgrepo.com
+│   │       └── images/            # Mock human faces via uifaces.co API
+│   │
+│   ├── package.json
+│   └── tailwind.config.js
+│
+├── database/                      # 💾 PostgreSQL Database
+│   ├── schema.sql
+│   └── seeds/
+│       ├── products_seed.sql
+│       ├── orders_seed.sql
+│       └── users_seed.sql
+│
+└── admin-ui/                      # 🎨 Open Source Admin Panel
+    ├── index.html
+    ├── dashboard/
+    │   ├── sales-overview/        # Revenue charts (Grafana embedded)
+    │   ├── recent-orders/         # Filterable order list
+    │   └── top-products/          # Best sellers ranking
+    ├── products/
+    │   ├── add-product/           # Form with image upload
+    │   ├── edit-product/          # Variant & stock editor
+    │   └── inventory-alerts/      # Low stock notifications
+    ├── orders/
+    │   ├── order-list/            # Status update workflow
+    │   ├── invoice-generator/     # PDF download
+    │   └── refunds/               # Return processing
+    ├── customers/
+    │   ├── customer-directory/    # Search & filter users
+    │   ├── account-details/       # Order history view
+    │   └── role-management/       # Admin/Staff/Vendor assign
+    ├── sales/
+    │   ├── revenue-dashboard/     # Daily/Weekly/Monthly graphs
+    │   ├── payment-settings/      # Stripe/PayPal config
+    │   └── coupon-manager/        # Promo code creator
+    ├── content/
+    │   ├── homepage-banners/      # Hero image uploader
+    │   ├── blog-editor/           # Matcha wellness articles
+    │   └── testimonials/          # Review approval queue
+    └── settings/
+        ├── user-permissions/      # Role-based access control
+        ├── backup-restore/        # DB export/import
+        ├── seo-meta/              # Per-page meta tags
+        └── api-keys/              # Payment gateway keys
+            </pre>
+        </section>
+
+        <!-- ADMIN PANEL FEATURES TABLE -->
+        <section class="section">
+            <h2>🛠️ Admin Panel Features Summary</h2>
+            
+            <h3>Core Product Management</h3>
+            <table>
+                <tr>
+                    <th>Feature</th>
+                    <th>Description</th>
+                    <th>License</th>
+                </tr>
+                <tr>
+                    <td>Add/Edit/Delete Products</td>
+                    <td>Name, Description, Price, Stock, Categories</td>
+                    <td><span class="badge">Open Source</span></td>
+                </tr>
+                <tr>
+                    <td>Variant Management</td>
+                    <td>Sizes, flavors, gift bundles</td>
+                    <td><span class="badge">Open Source</span></td>
+                </tr>
+                <tr>
+                    <td>Stock Tracking</td>
+                    <td>Inventory alerts with low-stock notifications</td>
+                    <td><span class="badge">Open Source</span></td>
+                </tr>
+            </table>
+
+            <h3 style="margin-top: 2rem;">Order & Customer Management</h3>
+            <table>
+                <tr>
+                    <th>Feature</th>
+                    <th>Description</th>
+                    <th>License</th>
+                </tr>
+                <tr>
+                    <td>Order Status Updates</td>
+                    <td>Pending → Processing → Shipped → Delivered</td>
+                    <td><span class="badge">Open Source</span></td>
+                </tr>
+                <tr>
+                    <td>Invoice Generation</td>
+                    <td>PDF downloads for customers</td>
+                    <td><span class="badge">Open Source</span></td>
+                </tr>
+                <tr>
+                    <td>Customer Accounts</td>
+                    <td>Registration date, order history, total spend</td>
+                    <td><span class="badge">Open Source</span></td>
+                </tr>
+                <tr>
+                    <td>User Roles</td>
+                    <td>Admin, Staff, Vendor, Customer permissions</td>
+                    <td><span class="badge">Open Source</span></td>
+                </tr>
+            </table>
+
+            <h3 style="margin-top: 2rem;">Sales & Finance</h3>
+            <table>
+                <tr>
+                    <th>Feature</th>
+                    <th>Description</th>
+                    <th>License</th>
+                </tr>
+                <tr>
+                    <td>Sales Dashboard</td>
+                    <td>Daily, weekly, monthly revenue reporting</td>
+                    <td><span class="badge">Open Source</span></td>
+                </tr>
+                <tr>
+                    <td>Coupon Manager</td>
+                    <td>Promotion code creation & validation</td>
+                    <td><span class="badge">Open Source</span></td>
+                </tr>
+                <tr>
+                    <td>Payment Integration</td>
+                    <td>Stripe/PayPal gateway configuration</td>
+                    <td><span class="badge">Open Source</span></td>
+                </tr>
+            </table>
+
+            <h3 style="margin-top: 2rem;">Content & Settings</h3>
+            <table>
+                <tr>
+                    <th>Feature</th>
+                    <th>Description</th>
+                    <th>License</th>
+                </tr>
+                <tr>
+                    <td>Banner Management</td>
+                    <td>Homepage hero images & layouts</td>
+                    <td><span class="badge">Open Source</span></td>
+                </tr>
+                <tr>
+                    <td>Blog Editor</td>
+                    <td>Matcha wellness articles & posts</td>
+                    <td><span class="badge">Open Source</span></td>
+                </tr>
+                <tr>
+                    <td>SEO Meta Tags</td>
+                    <td>Per-product/page optimization</td>
+                    <td><span class="badge">Open Source</span></td>
+                </tr>
+                <tr>
+                    <td>Backup & Restore</td>
+                    <td>Database export/import options</td>
+                    <td><span class="badge">Open Source</span></td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- OPEN SOURCE RECOMMENDATIONS -->
+        <section class="section">
+            <h2>🔓 Recommended Open Source Tools</h2>
+            <table>
+                <tr>
+                    <th>Tool</th>
+                    <th>Purpose</th>
+                    <th>License</th>
+                </tr>
+                <tr>
+                    <td>Django Unfold</td>
+                    <td>Modern Admin Panel (Tailwind-native)</td>
+                    <td><span class="badge">Apache 2.0</span></td>
+                </tr>
+                <tr>
+                    <td>Grafana</td>
+                    <td>Analytics Dashboard & Charts</td>
+                    <td><span class="badge">AGPLv3</span></td>
+                </tr>
+                <tr>
+                    <td>Prometheus</td>
+                    <td>Metrics Collection & Monitoring</td>
+                    <td><span class="badge">Apache 2.0</span></td>
+                </tr>
+                <tr>
+                    <td>Redis</td>
+                    <td>Caching & Session Storage</td>
+                    <td><span class="badge">BSD</span></td>
+                </tr>
+                <tr>
+                    <td>NGINX Proxy Manager</td>
+                    <td>SSL/Proxy Configuration</td>
+                    <td><span class="badge">GPL</span></td>
+                </tr>
+                <tr>
+                    <td>GitLab CI/CD</td>
+                    <td>Deployment Automation</td>
+                    <td><span class="badge">MIT</span></td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- FOOTER -->
+        <footer>
+            <p><strong>Generated Date:</strong> Thursday, May 07, 2026</p>
+            <p>🍵 Premium Matcha eCommerce Platform | Free & Open Source Stack</p>
+            <p style="font-size: 0.8rem; margin-top: 1rem;">All tools listed are 100% open source with no licensing fees</p>
+        </footer>
+    </div>
+
+    <script>
+        // Print functionality trigger
+        function printPage() {
+            window.print();
+        }
+        // Auto-hide print button in some browsers
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Matcha Book Store Project Structure Loaded');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+[
+  {
+    "email": "customer-test@email.com",
+    "name": "Martha Stewart",
+    "password": "test123",
+    "isTempPassword": true,
+    "createdAt": "2026-05-08T10:30:53.526Z"
+  },
+  {
+    "email": "sb-uueza25774249@personal.example.com",
+    "name": "John Doe",
+    "password": "layf4cgd",
+    "isTempPassword": true,
+    "createdAt": "2026-05-08T11:07:11.972Z"
+  }
+]

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Dashboard — Matcha Book</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/main.css">
+<style>
+.dashboard { padding: 100px 0 60px; min-height: 100vh; background: var(--c-parchment); }
+.dashboard-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: var(--sp-xl); }
+.order-card {
+  background: var(--c-white);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-lg);
+  margin-bottom: var(--sp-md);
+  cursor: pointer;
+  transition: box-shadow .3s;
+}
+.order-card:hover { box-shadow: var(--shadow-md); }
+.order-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--sp-md); flex-wrap: wrap; gap: var(--sp-sm); }
+.order-id { font-family: var(--t-display); font-size: 1.2rem; font-weight: 300; color: var(--c-ink); }
+.order-date { font-size: .78rem; color: var(--c-muted); }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .65rem; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+.badge.completed { background: var(--c-sage); color: var(--c-matcha); }
+.badge.pending { background: var(--c-cream-deep); color: var(--c-bark); }
+.badge.shipped { background: #E6F3FF; color: #0066CC; }
+.badge.delivered { background: #E6FFE6; color: #008000; }
+.badge.refunded { background: #FFE6E6; color: #CC0000; }
+
+.empty-state { text-align: center; padding: var(--sp-xl); color: var(--c-muted); font-style: italic; }
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(30, 42, 34, 0.4); backdrop-filter: blur(4px);
+  display: none; align-items: center; justify-content: center; z-index: 1000;
+}
+.modal {
+  background: var(--c-white); border-radius: var(--radius-lg);
+  width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto;
+  padding: var(--sp-xl); position: relative; box-shadow: var(--shadow-xl);
+}
+.modal-close {
+  position: absolute; top: 20px; right: 20px; font-size: 1.5rem;
+  cursor: pointer; color: var(--c-muted); transition: color .2s;
+}
+.modal-close:hover { color: var(--c-ink); }
+.modal-section { margin-bottom: var(--sp-lg); border-bottom: 1px solid var(--c-border); padding-bottom: var(--sp-md); }
+.modal-section:last-child { border-bottom: none; }
+.modal-section h4 { font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; color: var(--c-muted); margin-bottom: var(--sp-sm); }
+.modal-section p { font-size: .95rem; margin-bottom: 4px; }
+
+/* Timeline Styles */
+.timeline {
+  display: flex; justify-content: space-between; margin: 20px 0; position: relative;
+  padding: 0 10px;
+}
+.timeline::before {
+  content: ''; position: absolute; top: 11px; left: 10px; right: 10px; height: 2px;
+  background: var(--c-cream-deep); z-index: 1;
+}
+.timeline-step { position: relative; z-index: 2; text-align: center; width: 60px; }
+.step-dot {
+  width: 24px; height: 24px; background: var(--c-white); border: 2px solid var(--c-cream-deep);
+  border-radius: 50%; margin: 0 auto 4px; display: flex; align-items: center; justify-content: center;
+  font-size: 10px; transition: all .3s;
+}
+.timeline-step.active .step-dot { border-color: var(--c-matcha); background: var(--c-matcha); color: var(--c-white); }
+.timeline-step.completed .step-dot { border-color: var(--c-matcha); background: var(--c-sage); color: var(--c-matcha); }
+.step-label { font-size: .6rem; text-transform: uppercase; letter-spacing: .05em; color: var(--c-muted); }
+
+.settings-form input {
+  width: 100%; padding: 10px 16px; border: 1px solid var(--c-border); border-radius: 40px;
+  font-family: var(--t-body); font-size: .9rem; margin-bottom: var(--sp-md); outline: none;
+}
+.settings-form input:focus { border-color: var(--c-matcha); }
+
+@media (max-width: 900px) {
+  .dashboard-header { flex-direction: column; align-items: flex-start; gap: var(--sp-md); }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav" id="mainNav" style="border-bottom-color: var(--c-border);">
+  <a href="/" class="nav-logo">Matcha <span>Book</span></a>
+  <div class="nav-actions">
+    <button onclick="openSettings()" class="nav-cta" style="background:transparent; color:var(--c-matcha); border:1px solid var(--c-matcha); margin-right:10px;">Account</button>
+    <button onclick="doLogout()" class="nav-cta">Logout</button>
+  </div>
+</nav>
+
+<section class="dashboard">
+  <div class="container">
+    <div id="dashboardView">
+      <div class="dashboard-header">
+        <div>
+          <div class="section-label" id="customerWelcome">Welcome</div>
+          <h2 class="section-title" style="margin-bottom:0;">My <em>Orders</em></h2>
+        </div>
+        <button class="cart-continue" onclick="deleteAllOrders()" style="background:var(--c-bark); color:#fff; border:none; padding:8px 16px; font-size:.8rem; border-radius:4px; cursor:pointer;">Delete All Orders</button>
+      </div>
+
+      <div id="ordersContainer">
+        <p class="empty-state">Loading your orders...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Detail Modal -->
+  <div class="modal-overlay" id="orderModalOverlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <span class="modal-close" onclick="closeModal()">&times;</span>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsModalOverlay" onclick="if(event.target===this)closeSettings()">
+    <div class="modal">
+      <span class="modal-close" onclick="closeSettings()">&times;</span>
+      <div class="dashboard-header" style="margin-bottom: var(--sp-lg);">
+        <h2 class="section-title" style="font-size: 1.8rem; margin-bottom:0;">Account <em>Settings</em></h2>
+      </div>
+      <div class="settings-form">
+        <div class="modal-section">
+          <h4>Profile Info</h4>
+          <input type="text" id="settingsName" placeholder="Full Name">
+        </div>
+        <div class="modal-section">
+          <h4>Change Password</h4>
+          <p style="font-size: .85rem; color:var(--c-muted); margin-bottom:10px;">Set a new password for your account.</p>
+          <input type="password" id="settingsPassword" placeholder="New password">
+        </div>
+        <button class="btn-primary" style="width:100%; justify-content:center;" onclick="saveSettings()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+let allOrders = [];
+let currentUser = null;
+
+async function checkAuth() {
+  try {
+    const res = await fetch('/api/client/me');
+    if (!res.ok) throw new Error('Unauthorized');
+    currentUser = await res.json();
+    document.getElementById('customerWelcome').textContent = 'Welcome, ' + (currentUser.name || 'Friend');
+    document.getElementById('settingsName').value = currentUser.name || '';
+    
+    if (currentUser.isTempPassword) {
+      alert('Welcome! Please set a permanent password in your account settings.');
+      openSettings();
+    }
+    
+    loadOrders();
+  } catch (err) {
+    window.location.href = '/client/login/';
+  }
+}
+
+async function doLogout() {
+  await fetch('/api/client/logout', { method: 'POST' });
+  window.location.href = '/client/login/';
+}
+
+async function loadOrders() {
+  try {
+    const res = await fetch('/api/client/orders');
+    if (!res.ok) throw new Error();
+    allOrders = await res.json();
+    renderOrders(allOrders);
+  } catch (err) {
+    document.getElementById('ordersContainer').innerHTML = '<p class="empty-state">Failed to load orders.</p>';
+  }
+}
+
+function openModal(orderId) {
+  const order = allOrders.find(o => o.id === orderId);
+  if (!order) return;
+
+  const statusSteps = [
+    { id: 'pending', label: 'Ordered' },
+    { id: 'completed', label: 'Confirmed' },
+    { id: 'shipped', label: 'Shipped' },
+    { id: 'delivered', label: 'Delivered' }
+  ];
+  const currentIndex = statusSteps.findIndex(s => s.id === order.status);
+
+  const timelineHtml = statusSteps.map((step, index) => {
+    let classes = 'timeline-step';
+    if (index === currentIndex) classes += ' active';
+    if (index < currentIndex) classes += ' completed';
+    return `
+      <div class="${classes}">
+        <div class="step-dot">${index < currentIndex ? '✓' : index + 1}</div>
+        <div class="step-label">${step.label}</div>
+      </div>
+    `;
+  }).join('');
+
+  const content = `
+    <div class="modal-section">
+      <h4>Order Status</h4>
+      <div class="timeline">${timelineHtml}</div>
+      ${order.status === 'shipped' && order.shippingTrackingUrl ? `
+        <div style="text-align:center; padding:12px; background:var(--c-sage); border-radius:8px; margin-top:10px;">
+          <p style="font-size:.85rem; margin-bottom:8px;"><strong>Your order is on the way!</strong></p>
+          <a href="${order.shippingTrackingUrl}" target="_blank" class="btn-primary" style="padding:6px 12px; font-size:.75rem;">Track Shipment</a>
+        </div>
+      ` : ''}
+    </div>
+    <div class="modal-section">
+      <h4>Order Info</h4>
+      <p><strong>ID:</strong> ${order.id}</p>
+      <p><strong>Date:</strong> ${new Date(order.createdAt).toLocaleString()}</p>
+    </div>
+    <div class="modal-section">
+      <h4>Items</h4>
+      <ul style="padding-left: 20px; font-size: .9rem;">
+        ${order.items.map(i => `<li>${i.name} x${i.qty} — $${(i.price * i.qty).toFixed(2)}</li>`).join('')}
+      </ul>
+      <p style="margin-top: 10px;"><strong>Total: $${(order.total || 0).toFixed(2)}</strong></p>
+    </div>
+    <div class="modal-section">
+      <h4>Shipping Address</h4>
+      <p style="font-size:.85rem; color:var(--c-muted);">${order.address || '—'}</p>
+    </div>
+  `;
+
+  document.getElementById('modalContent').innerHTML = content;
+  document.getElementById('orderModalOverlay').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('orderModalOverlay').style.display = 'none';
+}
+
+function openSettings() {
+  document.getElementById('settingsModalOverlay').style.display = 'flex';
+}
+
+function closeSettings() {
+  document.getElementById('settingsModalOverlay').style.display = 'none';
+}
+
+async function saveSettings() {
+  const name = document.getElementById('settingsName').value.trim();
+  const password = document.getElementById('settingsPassword').value.trim();
+  
+  const payload = { name };
+  if (password) payload.password = password;
+
+  try {
+    const res = await fetch('/api/client/me', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      alert('Settings saved successfully.');
+      closeSettings();
+      checkAuth(); // Refresh user data
+    } else {
+      alert('Failed to save settings.');
+    }
+  } catch (err) {
+    alert('Error saving settings.');
+  }
+}
+
+function renderOrders(orders) {
+  const container = document.getElementById('ordersContainer');
+  if (!orders.length) {
+    container.innerHTML = '<p class="empty-state">You haven\'t placed any orders yet.</p>';
+    return;
+  }
+
+  container.innerHTML = orders.map(o => `
+    <div class="order-card" onclick="openModal('${o.id}')">
+      <div class="order-header">
+        <div>
+          <div class="order-id">${o.id}</div>
+          <div class="order-date">${new Date(o.createdAt).toLocaleDateString()}</div>
+        </div>
+        <span class="badge ${o.status}">${o.status}</span>
+      </div>
+      <div style="font-size:.85rem; color:var(--c-muted);">
+        ${o.items.map(i => i.name + ' x' + i.qty).join(', ')}
+      </div>
+      <div style="margin-top:12px; font-weight:500;">$${(o.total || 0).toFixed(2)}</div>
+    </div>
+  `).join('');
+}
+
+window.addEventListener('scroll', () => {
+  document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 40);
+}, { passive: true });
+
+async function deleteAllOrders() {
+  if (confirm('Are you sure you want to delete all your orders? This cannot be undone.')) {
+    try {
+      const res = await fetch('/api/client/orders', { method: 'DELETE' });
+      if (res.ok) {
+        loadOrders();
+      } else {
+        alert('Failed to delete orders.');
+      }
+    } catch (err) {
+      alert('Error deleting orders.');
+    }
+  }
+}
+
+checkAuth();
+</script>
+
+</body>
+</html>

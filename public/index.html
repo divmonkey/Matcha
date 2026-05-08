@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matcha Book — The Green Tea Matcha Recipe Book</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+
+<!-- ─── CART OVERLAY ─────────────────────────────────────── -->
+<div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+<div class="cart-drawer" id="cartDrawer">
+  <div class="cart-header">
+    <span class="cart-title">Your Cart</span>
+    <button class="cart-close" onclick="closeCart()" aria-label="Close cart">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="cart-items" id="cartItems">
+    <div class="cart-empty">
+      <div class="cart-empty-icon">🍵</div>
+      <p class="cart-empty-text">Your cart is empty</p>
+      <p class="cart-empty-sub">Add something wonderful</p>
+    </div>
+  </div>
+  <div class="cart-footer" id="cartFooter" style="display:none">
+    <div class="cart-subtotal">
+      <span class="cart-subtotal-label">Subtotal</span>
+      <span class="cart-subtotal-value" id="cartTotal">$0.00</span>
+    </div>
+    <div id="paypal-button-container"></div>
+    <button class="checkout-btn" id="manualCheckoutBtn" onclick="startManualCheckout()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      Proceed to Checkout
+    </button>
+    <button class="cart-continue" onclick="closeCart()">Continue Shopping</button>
+  </div>
+</div>
+
+<!-- ─── SUCCESS MODAL ────────────────────────────────────── -->
+<div class="success-overlay" id="successOverlay" onclick="closeSuccessModal(event)">
+  <div class="success-modal" onclick="event.stopPropagation()">
+    <div class="success-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+    </div>
+    <h3>Order Confirmed</h3>
+    <div id="successMessage">Thank you for your purchase! A confirmation email will be sent shortly.</div>
+    <div id="successActions" style="margin-top:20px; display:flex; flex-direction:column; gap:10px; align-items:center;">
+      <a href="/customer/dashboard/" class="btn-primary" style="text-align:center;">View My Orders</a>
+      <button class="cart-continue" onclick="closeSuccessModal()" style="width:auto; padding:8px 16px;">Continue Shopping</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TOAST ────────────────────────────────────────────── -->
+<div class="toast" id="toast">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+  <span id="toastText">Added to cart</span>
+</div>
+
+<!-- ─── NAV ──────────────────────────────────────────────── -->
+<nav class="nav" id="mainNav">
+  <a href="#" class="nav-logo">Matcha <span>Book</span></a>
+  <div class="nav-links">
+    <a href="#inside">Inside</a>
+    <a href="#story">Our Story</a>
+    <a href="#book">Buy</a>
+    <a href="#reviews">Reviews</a>
+  </div>
+  <div class="nav-actions">
+    <a href="/customer/dashboard/" class="nav-icon" aria-label="My Orders" title="My Orders">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </a>
+    <button class="nav-icon" aria-label="Cart" onclick="openCart()">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <span class="cart-badge" id="cartCount" style="display:none">0</span>
+    </button>
+    <a href="#book" class="nav-cta">Buy Now</a>
+  </div>
+  <button class="nav-mobile-toggle" aria-label="Menu" onclick="toggleMobileMenu()">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- Mobile menu dropdown -->
+<div id="mobileMenu" style="display:none; position:fixed; top:70px; left:0; right:0; background:rgba(249,246,240,.97); backdrop-filter:blur(14px); z-index:99; padding:var(--sp-lg); border-bottom:1px solid var(--c-border);">
+  <div style="display:flex; flex-direction:column; gap:var(--sp-md);">
+    <a href="#inside" onclick="toggleMobileMenu()" style="font-size:.9rem; color:var(--c-bark); text-transform:uppercase; letter-spacing:.1em;">Inside</a>
+    <a href="#story" onclick="toggleMobileMenu()" style="font-size:.9rem; color:var(--c-bark); text-transform:uppercase; letter-spacing:.1em;">Our Story</a>
+    <a href="#book" onclick="toggleMobileMenu()" style="font-size:.9rem; color:var(--c-bark); text-transform:uppercase; letter-spacing:.1em;">Buy</a>
+    <a href="#reviews" onclick="toggleMobileMenu()" style="font-size:.9rem; color:var(--c-bark); text-transform:uppercase; letter-spacing:.1em;">Reviews</a>
+  </div>
+</div>
+
+<!-- ─── HERO ─────────────────────────────────────────────── -->
+<section class="hero" id="hero">
+  <div class="hero-left">
+    <p class="hero-eyebrow reveal">80+ Recipes · Hardcover · First Edition</p>
+    <h1 class="hero-title reveal reveal-delay-1">
+      The Green Tea<br>Matcha <em>Recipe Book.</em>
+    </h1>
+    <p class="hero-body reveal reveal-delay-2">
+      From ceremonial morning bowls to indulgent desserts and savoury creations — 
+      discover the complete art of cooking with matcha. Curated by chefs, 
+      illustrated with stunning photography.
+    </p>
+
+    <div class="hero-reviews-mini reveal reveal-delay-2">
+      <div class="review-faces-mini">
+        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face" alt="Reviewer" class="face-mini">
+        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face" alt="Reviewer" class="face-mini">
+        <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face" alt="Reviewer" class="face-mini">
+        <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&crop=face" alt="Reviewer" class="face-mini">
+      </div>
+      <div class="review-text-mini"><strong>2,400+</strong> copies sold</div>
+    </div>
+
+    <div class="hero-actions reveal reveal-delay-3">
+      <button class="btn-primary" onclick="addToCart('The Green Tea Matcha Recipe Book','Hardcover',34,'/images/matcha_book.png')">
+        Add to Cart — $34
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      </button>
+      <a href="#inside" class="btn-ghost">
+        Peek Inside
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+    <div class="hero-stats reveal reveal-delay-4">
+      <div>
+        <div class="hero-stat-num">80+</div>
+        <div class="hero-stat-label">Original Recipes</div>
+      </div>
+      <div>
+        <div class="hero-stat-num">200</div>
+        <div class="hero-stat-label">Pages of Art</div>
+      </div>
+      <div>
+        <div class="hero-stat-num">4.9</div>
+        <div class="hero-stat-label">Average Rating</div>
+      </div>
+    </div>
+  </div>
+  <div class="hero-right">
+    <img
+      class="hero-img"
+      src="/images/book_cover.png"
+      alt="The Green Tea Matcha Recipe Book"
+      style="object-fit:contain; width:90%; height:90%;"
+    >
+    <div class="hero-badge">
+      <div class="hero-badge-title">Bestseller</div>
+      <div class="hero-badge-sub">Culinary Category</div>
+    </div>
+    <div class="hero-tag">First Edition · Limited Print</div>
+  </div>
+</section>
+
+<!-- ─── MARQUEE ───────────────────────────────────────────── -->
+<div class="marquee-track reveal">
+  <div class="marquee-inner">
+    <div class="marquee-item">Ceremonial Recipes<span class="marquee-dot"></span>Culinary Creations<span class="marquee-dot"></span>Desserts & Bakes<span class="marquee-dot"></span>Drinks & Lattes<span class="marquee-dot"></span>Hardcover Edition<span class="marquee-dot"></span>Free Shipping $50+<span class="marquee-dot"></span>30-Day Returns<span class="marquee-dot"></span></div>
+    <div class="marquee-item">Ceremonial Recipes<span class="marquee-dot"></span>Culinary Creations<span class="marquee-dot"></span>Desserts & Bakes<span class="marquee-dot"></span>Drinks & Lattes<span class="marquee-dot"></span>Hardcover Edition<span class="marquee-dot"></span>Free Shipping $50+<span class="marquee-dot"></span>30-Day Returns<span class="marquee-dot"></span></div>
+  </div>
+</div>
+
+<!-- ─── INSIDE THE BOOK ──────────────────────────────────── -->
+<section class="inside-book reveal" id="inside">
+  <div class="container">
+    <div class="inside-book-header">
+      <div>
+        <div class="section-label reveal">What You'll Discover</div>
+        <h2 class="section-title reveal">Inside the <em>Book</em></h2>
+      </div>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card reveal">
+        <div class="feature-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        </div>
+        <h3>Ceremonial Basics</h3>
+        <p>Master the traditional preparation — whisking techniques, water temperature, and the mindfulness of chado.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </div>
+        <h3>Sweet Indulgences</h3>
+        <p>From matcha tiramisu to white-chocolate matcha cookies — 30+ dessert recipes with precise measurements.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </div>
+        <h3>Savoury Creations</h3>
+        <p>Matcha soba, green tea risotto, and umami-rich sauces that elevate everyday cooking.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <h3>Drinks & Elixirs</h3>
+        <p>Iced matcha lattes, sparkling matcha tonics, and evening adaptogenic blends for every mood.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        </div>
+        <h3>Ingredient Guide</h3>
+        <p>A complete primer on grades, sourcing, storage, and how to select matcha for every application.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+        <h3>Photography</h3>
+        <p>Over 100 full-page photographs capturing texture, colour, and the quiet beauty of each dish.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STORY ─────────────────────────────────────────────── -->
+<section class="story reveal" id="story">
+  <div class="container">
+    <div class="story-inner">
+      <div>
+        <div class="section-label story-label reveal">Our Story</div>
+        <h2 class="story-title reveal">Crafted in <em>Kyoto,</em><br>made for your kitchen</h2>
+        <p class="story-body reveal">
+          After years of studying tea ceremony in Uji, our authors returned with a mission: 
+          to make matcha accessible beyond the teahouse. This book distills centuries of 
+          Japanese tradition into modern, achievable recipes for home cooks everywhere.
+        </p>
+        <div class="story-metrics reveal">
+          <div class="story-metric">
+            <div class="story-metric-num">2</div>
+            <div class="story-metric-label">Years Research</div>
+          </div>
+          <div class="story-metric">
+            <div class="story-metric-num">12</div>
+            <div class="story-metric-label">Chefs Consulted</div>
+          </div>
+          <div class="story-metric">
+            <div class="story-metric-num">100+</div>
+            <div class="story-metric-label">Photos</div>
+          </div>
+        </div>
+      </div>
+      <div class="story-img-grid reveal">
+        <img src="https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=700&q=80&auto=format&fit=crop" alt="Tea garden in Japan" loading="lazy">
+        <img src="https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&q=80&auto=format&fit=crop" alt="Matcha preparation" loading="lazy">
+        <img src="https://images.unsplash.com/photo-1547592180-85f173990554?w=400&q=80&auto=format&fit=crop" alt="Matcha bowl" loading="lazy">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── BOOK SHOWCASE / PRODUCT DETAIL ────────────────────── -->
+<section class="book-showcase reveal" id="book">
+  <div class="container">
+    <div class="book-showcase-inner">
+      <div class="book-img-wrap reveal">
+        <img src="/images/matcha_book.png" alt="The Green Tea Matcha Recipe Book" loading="lazy">
+        <span class="book-pill">⭐ Bestseller</span>
+        <div class="book-review">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-text">"The photography alone is worth the price. Every recipe I've tried has been exceptional."</p>
+          <div class="review-author">— Sarah M., London</div>
+        </div>
+      </div>
+      <div class="book-content">
+        <div class="section-label reveal">Featured Product</div>
+        <h2 class="section-title reveal">The Green Tea<br>Matcha <em>Recipe Book</em></h2>
+        <div class="book-price-group reveal">
+          <span class="book-price">$34</span>
+          <span class="book-old">$45</span>
+          <span class="book-save">Save 24%</span>
+        </div>
+        <p class="section-body reveal" style="margin-bottom:var(--sp-lg)">
+          A 200-page hardcover collection of 80+ original matcha recipes spanning 
+          drinks, desserts, and savoury dishes. Each recipe is tested, photographed, 
+          and paired with cultural notes from Kyoto's tea masters.
+        </p>
+        <div class="qty-ctrl reveal">
+          <button class="qty-btn" onclick="changeQty(-1)" aria-label="Decrease quantity">−</button>
+          <span class="qty-num" id="qtyNum">1</span>
+          <button class="qty-btn" onclick="changeQty(1)" aria-label="Increase quantity">+</button>
+        </div>
+        <button class="add-to-cart reveal" onclick="addBookToCart()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+          Add to Cart — $34
+        </button>
+        <div class="trust-signals reveal">
+          <div class="trust-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            Free shipping $50+
+          </div>
+          <div class="trust-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+            30-day returns
+          </div>
+          <div class="trust-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            FSC certified paper
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── TESTIMONIALS ──────────────────────────────────────── -->
+<section class="testimonials reveal" id="reviews">
+  <div class="container">
+    <div class="testimonials-header">
+      <div class="section-label reveal">Testimonials</div>
+      <h2 class="section-title reveal">Loved by <em>home cooks</em></h2>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card reveal">
+        <div class="testimonial-quote">"</div>
+        <div class="t-stars">★★★★★</div>
+        <p class="t-body">I have never cooked with matcha before, and this book made it feel effortless. The introductory guide on choosing matcha grades alone saved me from so many mistakes. A treasure.</p>
+        <div class="t-author">
+          <img class="t-avatar" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face" alt="Emma R.">
+          <div>
+            <div class="t-name">Emma Richardson</div>
+            <div class="t-role">Food Blogger, London</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card reveal reveal-delay-2">
+        <div class="testimonial-quote">"</div>
+        <div class="t-stars">★★★★★</div>
+        <p class="t-body">As a professional pastry chef, I was skeptical of yet another trendy recipe book. But the technical precision here is remarkable. The matcha soufflé recipe is now a staple in my restaurant.</p>
+        <div class="t-author">
+          <img class="t-avatar" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face" alt="Kenji M.">
+          <div>
+            <div class="t-name">Kenji Matsuda</div>
+            <div class="t-role">Pastry Chef, New York</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card reveal reveal-delay-3">
+        <div class="testimonial-quote">"</div>
+        <div class="t-stars">★★★★★</div>
+        <p class="t-body">Bought this as a gift for my wife and she has barely put it down. The photography is gallery-worthy and the savoury recipes surprised us both. Worth every penny.</p>
+        <div class="t-author">
+          <img class="t-avatar" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face" alt="Carlos V.">
+          <div>
+            <div class="t-name">Carlos Vega</div>
+            <div class="t-role">Designer, Barcelona</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── NEWSLETTER ────────────────────────────────────────── -->
+<section class="cta-section reveal">
+  <div class="container">
+    <div class="cta-inner">
+      <div>
+        <div class="section-label reveal">Stay In The Know</div>
+        <h2 class="section-title reveal">New recipes,<br>tips & <em>quiet wisdom</em></h2>
+        <p class="section-body reveal" style="margin-top:var(--sp-md)">Join 8,000+ matcha lovers receiving our monthly letter with bonus recipes and sourcing guides.</p>
+      </div>
+      <div class="reveal">
+        <div class="cta-form">
+          <input type="email" class="cta-input" placeholder="your@email.com" aria-label="Email address">
+          <button class="cta-submit">Subscribe</button>
+        </div>
+        <p class="cta-disclaimer">By subscribing you agree to our privacy policy. Unsubscribe anytime.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ────────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo">Matcha <span>Book</span></div>
+        <p class="footer-about">The definitive guide to cooking with matcha. Hardcover, 200 pages, 80+ recipes — shipped worldwide from Kyoto to your kitchen.</p>
+        <div class="social-links">
+          <a href="#" class="social-link" aria-label="Instagram">Ig</a>
+          <a href="#" class="social-link" aria-label="Pinterest">Pt</a>
+          <a href="#" class="social-link" aria-label="Twitter">Tw</a>
+          <a href="#" class="social-link" aria-label="YouTube">Yt</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Shop</div>
+        <div class="footer-links">
+          <a href="#book">Recipe Book</a>
+          <a href="#">Gift Wrapping</a>
+          <a href="#">Bulk Orders</a>
+          <a href="#">Wholesale</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Learn</div>
+        <div class="footer-links">
+          <a href="#inside">Inside the Book</a>
+          <a href="#story">Our Story</a>
+          <a href="#">Brewing Guide</a>
+          <a href="#">Blog</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Support</div>
+        <div class="footer-links">
+          <a href="#">Shipping & Returns</a>
+          <a href="#">FAQ</a>
+          <a href="#">Contact Us</a>
+          <a href="#">Privacy Policy</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">© 2025 Matcha Book Ltd. All rights reserved.</div>
+      <div class="footer-badges">
+        <span class="footer-badge">FSC Certified</span>
+        <span class="footer-badge">Carbon Neutral</span>
+        <span class="footer-badge">Printed in Japan</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ─── BOOK DATA ─────────────────────────────────────────── */
+const BOOK_NAME = 'The Green Tea Matcha Recipe Book';
+const BOOK_VARIANT = 'Hardcover · First Edition';
+const BOOK_PRICE = 34;
+const BOOK_IMG = '/images/matcha_book.png';
+
+/* ─── CART ───────────────────────────────────────────────── */
+let cart = [];
+let qty = 1;
+let paypalConfigured = false;
+let paypalClientId = null;
+
+function changeQty(delta) {
+  qty = Math.max(1, qty + delta);
+  document.getElementById('qtyNum').textContent = qty;
+}
+
+function addBookToCart() {
+  addToCart(BOOK_NAME, BOOK_VARIANT, BOOK_PRICE, BOOK_IMG, qty);
+  qty = 1;
+  document.getElementById('qtyNum').textContent = qty;
+}
+
+function addToCart(name, variant, price, img, addQty = 1) {
+  const existing = cart.find(i => i.name === name && i.variant === variant);
+  if (existing) { existing.qty += addQty; }
+  else { cart.push({ name, variant, price, img, qty: addQty }); }
+  updateCartUI();
+  showToast('Added to cart — ' + name);
+}
+
+function removeFromCart(idx) {
+  cart.splice(idx, 1);
+  updateCartUI();
+}
+
+function updateCartUI() {
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const count = cart.reduce((s, i) => s + i.qty, 0);
+  const badge = document.getElementById('cartCount');
+  const footer = document.getElementById('cartFooter');
+  const itemsEl = document.getElementById('cartItems');
+
+  badge.style.display = count > 0 ? 'flex' : 'none';
+  badge.textContent = count;
+  document.getElementById('cartTotal').textContent = '$' + total.toFixed(2);
+  footer.style.display = cart.length > 0 ? 'block' : 'none';
+
+  if (cart.length === 0) {
+    itemsEl.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">🍵</div><p class="cart-empty-text">Your cart is empty</p><p class="cart-empty-sub">Add something wonderful</p></div>`;
+    document.getElementById('paypal-button-container').innerHTML = '';
+  } else {
+    itemsEl.innerHTML = cart.map((item, i) => `
+      <div class="cart-item">
+        <img class="cart-item-img" src="${item.img}" alt="${item.name}" onerror="this.style.background='var(--c-cream)'">
+        <div class="cart-item-details">
+          <div class="cart-item-name">${item.name}</div>
+          <div class="cart-item-variant">${item.variant} · Qty ${item.qty}</div>
+          <div class="cart-item-row">
+            <span class="cart-item-price">$${(item.price * item.qty).toFixed(2)}</span>
+            <span class="cart-item-remove" onclick="removeFromCart(${i})">Remove</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    // Render PayPal button if configured
+    if (paypalConfigured && paypalClientId) {
+      renderPayPalButton();
+      document.getElementById('manualCheckoutBtn').style.display = 'none';
+    } else {
+      document.getElementById('paypal-button-container').innerHTML = '';
+      document.getElementById('manualCheckoutBtn').style.display = 'flex';
+    }
+  }
+}
+
+function openCart() {
+  document.getElementById('cartDrawer').classList.add('open');
+  document.getElementById('cartOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeCart() {
+  document.getElementById('cartDrawer').classList.remove('open');
+  document.getElementById('cartOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+/* ─── PAYPAL CHECKOUT ───────────────────────────────────── */
+async function initPayPal() {
+  try {
+    const res = await fetch('/api/config');
+    const config = await res.json();
+    paypalConfigured = config.paypalConfigured;
+    paypalClientId = config.paypalClientId;
+
+    if (paypalConfigured && paypalClientId) {
+      await loadPayPalScript(paypalClientId);
+    }
+  } catch (e) {
+    console.warn('PayPal config unavailable:', e);
+  }
+}
+
+function loadPayPalScript(clientId) {
+  return new Promise((resolve, reject) => {
+    if (document.getElementById('paypal-sdk')) { resolve(); return; }
+    const script = document.createElement('script');
+    script.id = 'paypal-sdk';
+    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture`;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+function renderPayPalButton() {
+  const container = document.getElementById('paypal-button-container');
+  if (!container || !window.paypal) return;
+  container.innerHTML = '';
+  const btnContainer = document.createElement('div');
+  container.appendChild(btnContainer);
+
+  window.paypal.Buttons({
+    style: { layout: 'vertical', color: 'gold', shape: 'pill', label: 'paypal' },
+    createOrder: async (data, actions) => {
+      const items = cart.map(i => ({ name: i.name, price: i.price, qty: i.qty }));
+      const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+      try {
+        const res = await fetch('/api/create-paypal-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items, total })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to create order');
+        return data.orderID;
+      } catch (err) {
+        showToast('Checkout error: ' + err.message);
+        throw err;
+      }
+    },
+    onApprove: async (data) => {
+      try {
+        const res = await fetch('/api/capture-paypal-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderID: data.orderID })
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'Capture failed');
+
+        cart = [];
+        updateCartUI();
+        closeCart();
+        showOrderSuccess(result.order);
+      } catch (err) {
+        showToast('Payment failed: ' + err.message);
+      }
+    },
+    onError: (err) => {
+      console.error('PayPal error:', err);
+      showToast('PayPal checkout error. Please try again.');
+    }
+  }).render(btnContainer);
+}
+
+function startManualCheckout() {
+  // Fallback if PayPal is not configured — shows instructions
+  showSuccess('Checkout feature requires PayPal Sandbox credentials. See server console for setup instructions.');
+}
+
+/* ─── TOAST ──────────────────────────────────────────────── */
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastText').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ─── SUCCESS MODAL ──────────────────────────────────────── */
+function showSuccess(msg) {
+  document.getElementById('successMessage').innerHTML = '<p>' + msg + '</p>';
+  document.getElementById('successOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function showOrderSuccess(order) {
+  const emailNote = order.customerEmail ? `<p style="color:var(--c-muted); font-size:.85rem; margin-top:8px;">A confirmation has been sent to <strong>${order.customerEmail}</strong></p>` : '';
+  const dashLink = order.customerEmail ? `/customer/dashboard/?email=${encodeURIComponent(order.customerEmail)}` : '/customer/dashboard/';
+  document.getElementById('successMessage').innerHTML = `
+    <p>Your order <strong style="color:var(--c-matcha);">${order.id}</strong> has been confirmed.</p>
+    <p style="margin-top:8px;">Total: <strong>$${order.total.toFixed(2)}</strong></p>
+    ${emailNote}
+  `;
+  document.getElementById('successActions').innerHTML = `
+    <a href="${dashLink}" class="btn-primary" style="text-align:center;">View My Orders</a>
+    <button class="cart-continue" onclick="closeSuccessModal()" style="width:auto; padding:8px 16px;">Continue Shopping</button>
+  `;
+  document.getElementById('successOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSuccessModal(e) {
+  if (e && e.target !== document.getElementById('successOverlay')) return;
+  document.getElementById('successOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+/* ─── MOBILE MENU ────────────────────────────────────────── */
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobileMenu');
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+/* ─── NAV SCROLL ─────────────────────────────────────────── */
+window.addEventListener('scroll', () => {
+  document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 40);
+}, { passive: true });
+
+/* ─── SCROLL REVEAL ──────────────────────────────────────── */
+function observeReveal() {
+  const els = document.querySelectorAll('.reveal:not(.visible)');
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  els.forEach(el => obs.observe(el));
+}
+
+/* ─── STATS COUNTER ──────────────────────────────────────── */
+function animateCounters() {
+  const counters = document.querySelectorAll('.hero-stat-num, .review-text-mini strong');
+  counters.forEach(counter => {
+    const text = counter.innerText;
+    const target = parseFloat(text.replace(/[^0-9.]/g, ''));
+    if (isNaN(target)) return;
+    const suffix = text.replace(/[0-9.]/g, '');
+    const isDecimal = text.includes('.');
+    let count = 0;
+    const duration = 2000; // 2 seconds
+    const startTime = performance.now();
+
+    const update = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out expo
+      const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      
+      const currentCount = easeProgress * target;
+      
+      if (isDecimal) {
+        counter.innerText = currentCount.toFixed(1) + suffix;
+      } else {
+        counter.innerText = Math.floor(currentCount).toLocaleString() + suffix;
+      }
+
+      if (progress < 1) {
+        requestAnimationFrame(update);
+      } else {
+        counter.innerText = text;
+      }
+    };
+    requestAnimationFrame(update);
+  });
+}
+
+/* ─── SMOOTH SCROLL FOR ANCHORS ─────────────────────────── */
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function(e) {
+    e.preventDefault();
+    const target = document.querySelector(this.getAttribute('href'));
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+
+/* ─── ACTIVE NAV LINK ────────────────────────────────────── */
+function updateActiveNavLink() {
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a, #mobileMenu a');
+  
+  let current = '';
+  sections.forEach(section => {
+    const sectionTop = section.offsetTop;
+    if (window.pageYOffset >= sectionTop - 150) {
+      current = section.getAttribute('id');
+    }
+  });
+
+  navLinks.forEach(link => {
+    link.classList.remove('active');
+    if (link.getAttribute('href') === `#${current}`) {
+      link.classList.add('active');
+    }
+  });
+}
+
+/* ─── INIT ───────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  observeReveal();
+  initPayPal();
+  updateActiveNavLink();
+  setTimeout(animateCounters, 400); // Slight delay for entrance
+});
+window.addEventListener('scroll', updateActiveNavLink, { passive: true });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Login — Matcha Book</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/main.css">
+<style>
+.login-page { padding: 120px 0 60px; min-height: 100vh; background: var(--c-parchment); display: flex; align-items: center; justify-content: center; }
+.login-box {
+  width: 100%; max-width: 400px; background: var(--c-white);
+  border: 1px solid var(--c-border); border-radius: var(--radius-lg);
+  padding: var(--sp-xl); text-align: center;
+}
+.login-box h2 { font-family: var(--t-display); font-size: 2rem; font-weight: 300; color: var(--c-ink); margin-bottom: var(--sp-md); }
+.login-box input {
+  width: 100%; padding: 14px 20px; border: 1px solid var(--c-border); border-radius: 40px;
+  font-family: var(--t-body); font-size: 1rem; margin-bottom: var(--sp-md); outline: none; transition: border-color .2s;
+}
+.login-box input:focus { border-color: var(--c-matcha); box-shadow: 0 0 0 3px rgba(61,107,79,.12); }
+.error-msg { color: var(--c-error); font-size: .85rem; margin-top: var(--sp-sm); display: none; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">Matcha <span>Book</span></a>
+</nav>
+
+<section class="login-page">
+  <div class="login-box">
+    <h2>Admin <em>Access</em></h2>
+    <p style="font-size:.85rem; color:var(--c-muted); margin-bottom:var(--sp-lg);">Please enter the administrator password.</p>
+    <input type="password" id="adminPassword" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn-primary" style="width:100%; justify-content:center;" onclick="doLogin()">Sign In</button>
+    <p id="errorMsg" class="error-msg">Incorrect password.</p>
+    <div style="margin-top:20px; font-size:.85rem; color:var(--c-muted);">
+      <a href="/admin/forgot-password/" style="color:var(--c-matcha); text-decoration:none;">Forgot Password?</a>
+    </div>
+  </div>
+</section>
+
+<script>
+async function doLogin() {
+  const password = document.getElementById('adminPassword').value.trim();
+  const errorEl = document.getElementById('errorMsg');
+  
+  if (!password) return;
+
+  try {
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password })
+    });
+    
+    if (res.ok) {
+      window.location.href = '/admin/dashboard/';
+    } else {
+      errorEl.style.display = 'block';
+    }
+  } catch (err) {
+    errorEl.textContent = 'Server error. Please try again.';
+    errorEl.style.display = 'block';
+  }
+}
+</script>
+
+</body>
+</html>
