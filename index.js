@@ -43,46 +43,60 @@ function isAdmin(req, res, next) {
   }
 }
 
-/* ─── CUSTOMER STORE ────────────────────────────────────── */
-function loadCustomers() {
-  try { return JSON.parse(fs.readFileSync(CUSTOMERS_FILE, 'utf8')); } catch { return []; }
-}
-function saveCustomers(customers) {
-  fs.writeFileSync(CUSTOMERS_FILE, JSON.stringify(customers, null, 2));
+/* ─── CUSTOMER STORE (Supabase) ─────────────────────────── */
+async function getCustomer(email) {
+  const { data, error } = await supabase.from('customers').select('*').ilike('email', email).single();
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error fetching customer:', error);
+    return null;
+  }
+  if (!data) return null;
+  return {
+    email: data.email,
+    name: data.name,
+    password: data.password,
+    isTempPassword: data.is_temp_password,
+    createdAt: data.created_at
+  };
 }
 
-function getCustomer(email) {
-  return loadCustomers().find(c => c.email.toLowerCase() === email.toLowerCase());
-}
-
-function createOrUpdateCustomer(email, name) {
-  const customers = loadCustomers();
-  let customer = customers.find(c => c.email.toLowerCase() === email.toLowerCase());
+async function createOrUpdateCustomer(email, name) {
+  let customer = await getCustomer(email);
   let isNew = false;
   let tempPass = '';
 
   if (!customer) {
     isNew = true;
     tempPass = Math.random().toString(36).substring(2, 10);
-    customer = {
+    const newCustomer = {
       email: email.toLowerCase(),
       name: name || 'Customer',
       password: tempPass,
-      isTempPassword: true,
-      createdAt: new Date().toISOString()
+      is_temp_password: true,
+      created_at: new Date().toISOString()
     };
-    customers.push(customer);
-    saveCustomers(customers);
+    const { data, error } = await supabase.from('customers').insert(newCustomer).select();
+    if (error) {
+      console.error('Error creating customer:', error);
+      return { customer: null, isNew: false, tempPass: '' };
+    }
+    customer = {
+      email: data[0].email,
+      name: data[0].name,
+      password: data[0].password,
+      isTempPassword: data[0].is_temp_password,
+      createdAt: data[0].created_at
+    };
   }
   return { customer, isNew, tempPass };
 }
 
-function isCustomer(req, res, next) {
+async function isCustomer(req, res, next) {
   const email = req.cookies.customer_email;
   const pass = req.cookies.customer_pass;
   if (!email || !pass) return res.status(401).json({ error: 'Unauthorized' });
   
-  const customer = getCustomer(email);
+  const customer = await getCustomer(email);
   if (customer && customer.password === pass) {
     req.customer = customer;
     next();
@@ -151,53 +165,91 @@ const DATA_DIR = path.join(__dirname, 'data');
 const ORDERS_TABLE = 'matcha_orders';
 
 /* --- ORDERS STORE (Supabase) ------------------------------------- */
+/* --- Supabase Mapping Helpers --- */
+function mapOrderFromDb(dbOrder) {
+  if (!dbOrder) return null;
+  return {
+    id: dbOrder.id,
+    paypalOrderId: dbOrder.paypal_order_id,
+    captureId: dbOrder.capture_id,
+    customerName: dbOrder.customer_name,
+    customerEmail: dbOrder.customer_email,
+    address: dbOrder.address,
+    paymentMethod: dbOrder.payment_method,
+    total: dbOrder.total,
+    status: dbOrder.status,
+    shippingTrackingUrl: dbOrder.shipping_tracking_url,
+    items: dbOrder.items,
+    statusHistory: dbOrder.status_history,
+    createdAt: dbOrder.created_at
+  };
+}
+
 async function loadOrders() {
   const { data, error } = await supabase.from(ORDERS_TABLE).select('*').order('created_at', { ascending: false });
   if (error) {
     console.error('Error loading orders from Supabase:', error);
     return [];
   }
-  return data;
+  return data.map(mapOrderFromDb);
 }
 
 async function saveOrder(order) {
-  const { data, error } = await supabase.from(ORDERS_TABLE).upsert(order, { onConflict: 'id' }).select();
+  const dbOrder = {
+    id: order.id,
+    paypal_order_id: order.paypalOrderId,
+    capture_id: order.captureId,
+    customer_name: order.customerName,
+    customer_email: order.customerEmail,
+    address: order.address,
+    payment_method: order.paymentMethod,
+    total: order.total,
+    status: order.status,
+    shipping_tracking_url: order.shippingTrackingUrl,
+    items: order.items,
+    status_history: order.statusHistory,
+    created_at: order.createdAt
+  };
+  const { data, error } = await supabase.from(ORDERS_TABLE).upsert(dbOrder, { onConflict: 'id' }).select();
   if (error) {
     console.error('Error saving order to Supabase:', error);
     return null;
   }
-  return data[0];
+  return mapOrderFromDb(data[0]);
 }
 
 async function createOrder(orderData) {
   const timestamp = new Date().toISOString();
   const order = {
     id: 'ORD-' + Date.now().toString(36).toUpperCase(),
-    ...orderData,
+    paypal_order_id: orderData.paypalOrderId,
+    capture_id: orderData.captureId,
+    customer_name: orderData.customerName,
+    customer_email: orderData.customerEmail,
     address: orderData.address || '',
-    paymentMethod: orderData.paymentMethod || 'paypal',
-    shippingTrackingUrl: '',
-    status: 'pending', // Default to pending
-    statusHistory: [
-      { status: 'pending', timestamp }
-    ],
-    createdAt: timestamp,
+    payment_method: orderData.paymentMethod || 'paypal',
+    total: orderData.total,
+    items: orderData.items || [],
+    shipping_tracking_url: '',
+    status: 'pending',
+    status_history: [{ status: 'pending', timestamp }],
+    created_at: timestamp,
   };
   const { data, error } = await supabase.from(ORDERS_TABLE).insert(order).select();
   if (error) {
     console.error('Error creating order in Supabase:', error);
     return null;
   }
-  return data[0];
+  return mapOrderFromDb(data[0]);
 }
 
-async function getOrder(id) {
+async function getOrderById(id) {
   const { data, error } = await supabase.from(ORDERS_TABLE).select('*').eq('id', id).single();
-  if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+  if (error && error.code !== 'PGRST116') {
     console.error('Error fetching order from Supabase:', error);
     return null;
   }
-  return data;
+  return mapOrderFromDb(data);
 }
 
 async function getOrdersByEmail(email) {
@@ -206,12 +258,19 @@ async function getOrdersByEmail(email) {
     console.error('Error fetching orders by email from Supabase:', error);
     return [];
   }
-  return data;
+  return data.map(mapOrderFromDb);
 }
 
 /* ─── EMAIL SENDERS ─────────────────────────────────────── */
 async function sendCustomerConfirmation(order, tempPass) {
-  if (!transporter || !order.customerEmail) return false;
+  if (!transporter) {
+    console.log('[EMAIL] Transporter not initialized');
+    return false;
+  }
+  if (!order.customerEmail) {
+    console.log('[EMAIL] No customer email provided');
+    return false;
+  }
   const itemsList = order.items.map(i => `• ${i.name} x${i.qty} — $${(i.price * i.qty).toFixed(2)}`).join('\n');
   
   let loginNote = '';
@@ -273,9 +332,10 @@ If you have any questions, reply to this email.
   };
   try {
     await transporter.sendMail(mailOptions);
+    console.log(`[EMAIL] Confirmation sent to ${order.customerEmail} for order ${order.id}`);
     return true;
   } catch (err) {
-    console.error('Customer email failed:', err.message);
+    console.error(`[EMAIL] Customer email failed for ${order.id}:`, err.message);
     return false;
   }
 }
@@ -517,9 +577,11 @@ app.post('/api/capture-paypal-order', async (req, res) => {
     const captureID = purchaseUnit?.payments?.captures?.[0]?.id || '';
     const total = parseFloat(purchaseUnit?.payments?.captures?.[0]?.amount?.value || 0);
 
+    console.log(`[CAPTURE] Order: ${orderID}, Customer: ${customerEmail}, Name: ${customerName}, Total: ${total}`);
+
     // Build items from capture data or fallback
     let items = [];
-    if (purchaseUnit?.items) {
+    if (purchaseUnit?.items && Array.isArray(purchaseUnit.items)) {
       items = purchaseUnit.items.map(i => ({
         name: i.name,
         price: parseFloat(i.unit_amount.value),
@@ -528,7 +590,7 @@ app.post('/api/capture-paypal-order', async (req, res) => {
     }
 
     // Save order
-    const order = createOrder({
+    const order = await createOrder({
       paypalOrderId: orderID,
       captureId: captureID,
       customerName: customerName.trim(),
@@ -539,12 +601,17 @@ app.post('/api/capture-paypal-order', async (req, res) => {
       items,
     });
 
+    if (!order) throw new Error('Failed to create order in database');
+
     // Create/Update customer account
-    const { tempPass } = createOrUpdateCustomer(customerEmail, customerName);
+    const { tempPass } = await createOrUpdateCustomer(customerEmail, customerName);
+    console.log(`[CAPTURE] Customer account processed. TempPass: ${tempPass ? 'YES' : 'NO'}`);
 
     // Send emails
+    console.log(`[CAPTURE] Attempting to send emails to ${customerEmail}...`);
     const customerSent = await sendCustomerConfirmation(order, tempPass);
     const adminSent = await sendAdminNotification(order);
+    console.log(`[CAPTURE] Email status - Customer: ${customerSent}, Admin: ${adminSent}`);
 
     res.json({ success: true, order, tempPass, emails: { customer: customerSent, admin: adminSent } });
   } catch (err) {
@@ -554,9 +621,9 @@ app.post('/api/capture-paypal-order', async (req, res) => {
 });
 
 /* ─── CLIENT AUTH ROUTES ────────────────────────────────── */
-app.post('/api/client/login', (req, res) => {
+app.post('/api/client/login', async (req, res) => {
   const { email, password } = req.body;
-  const customer = getCustomer(email);
+  const customer = await getCustomer(email);
   if (customer && customer.password === password) {
     res.cookie('customer_email', customer.email, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000 });
     res.cookie('customer_pass', customer.password, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000 });
@@ -577,34 +644,34 @@ app.get('/api/client/me', isCustomer, (req, res) => {
   res.json(safeCustomer);
 });
 
-app.put('/api/client/me', isCustomer, (req, res) => {
+app.put('/api/client/me', isCustomer, async (req, res) => {
   const { name, password } = req.body;
-  const customers = loadCustomers();
-  const index = customers.findIndex(c => c.email === req.customer.email);
-  if (index !== -1) {
-    if (name) customers[index].name = name;
-    if (password) {
-      customers[index].password = password;
-      customers[index].isTempPassword = false;
-      // Update cookie to reflect new password
-      res.cookie('customer_pass', password, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000 });
-    }
-    saveCustomers(customers);
-    res.json({ success: true });
-  } else {
-    res.status(404).json({ error: 'Customer not found' });
+  const updateData = {};
+  if (name) updateData.name = name;
+  if (password) {
+    updateData.password = password;
+    updateData.is_temp_password = false;
   }
+  
+  if (Object.keys(updateData).length === 0) return res.json({ success: true });
+
+  const { error } = await supabase.from('customers').update(updateData).eq('email', req.customer.email);
+  if (error) return res.status(500).json({ error: error.message });
+
+  if (password) {
+    res.cookie('customer_pass', password, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000 });
+  }
+  res.json({ success: true });
 });
 
-app.get('/api/client/orders', isCustomer, (req, res) => {
-  const orders = getOrdersByEmail(req.customer.email);
+app.get('/api/client/orders', isCustomer, async (req, res) => {
+  const orders = await getOrdersByEmail(req.customer.email);
   res.json(orders);
 });
 
-app.delete('/api/client/orders', isCustomer, (req, res) => {
-  const orders = loadOrders();
-  const filtered = orders.filter(o => o.customerEmail.toLowerCase() !== req.customer.email.toLowerCase());
-  saveOrders(filtered);
+app.delete('/api/client/orders', isCustomer, async (req, res) => {
+  const { error } = await supabase.from(ORDERS_TABLE).delete().ilike('customer_email', req.customer.email);
+  if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true });
 });
 
@@ -615,7 +682,7 @@ app.post('/api/forgot-password', async (req, res) => {
   if (type === 'admin') {
     if (email.toLowerCase() === adminConfig.email.toLowerCase()) user = adminConfig;
   } else {
-    user = getCustomer(email);
+    user = await getCustomer(email);
   }
 
   if (!user) return res.json({ success: true, message: 'If that email exists, a reset link has been sent.' });
@@ -629,7 +696,7 @@ app.post('/api/forgot-password', async (req, res) => {
   res.json({ success: true, message: 'If that email exists, a reset link has been sent.' });
 });
 
-app.post('/api/reset-password', (req, res) => {
+app.post('/api/reset-password', async (req, res) => {
   const { token, password } = req.body;
   const tokens = loadForgotTokens();
   const session = tokens[token];
@@ -642,13 +709,8 @@ app.post('/api/reset-password', (req, res) => {
     adminConfig.password = password;
     saveAdminConfig();
   } else {
-    const customers = loadCustomers();
-    const index = customers.findIndex(c => c.email.toLowerCase() === session.email.toLowerCase());
-    if (index !== -1) {
-      customers[index].password = password;
-      customers[index].isTempPassword = false;
-      saveCustomers(customers);
-    }
+    const { error } = await supabase.from('customers').update({ password, is_temp_password: false }).ilike('email', session.email);
+    if (error) return res.status(500).json({ error: error.message });
   }
 
   delete tokens[token];
@@ -658,7 +720,7 @@ app.post('/api/reset-password', (req, res) => {
 
 app.post('/api/orders/:id/refund', isAdmin, async (req, res) => {
   const { id } = req.params;
-  const order = getOrderById(id);
+  const order = await getOrderById(id);
   if (!order || !order.captureId) return res.status(404).json({ error: 'Order or Capture ID not found' });
 
   try {
@@ -668,60 +730,56 @@ app.post('/api/orders/:id/refund', isAdmin, async (req, res) => {
       headers: { 
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`,
-        'PayPal-Request-Id': `REFUND-${order.id}-${Date.now()}` // Make ID unique per request
+        'PayPal-Request-Id': `REFUND-${order.id}-${Date.now()}`
       },
     });
     
-    const data = await response.json(); // Try to parse JSON response
+    const data = await response.json();
     if (!response.ok) {
-      console.error('PayPal refund API error:', { status: response.status, statusText: response.statusText, data }); // Log detailed error
-      throw new Error(data.message || `Refund failed. PayPal status: ${response.status}`); // Throw error with details
+      console.error('PayPal refund API error:', data);
+      throw new Error(data.message || `Refund failed with status: ${response.status}`);
     }
 
-    // Update internal status
-    const orders = loadOrders();
-    const index = orders.findIndex(o => o.id === id);
-    orders[index].status = 'refunded';
-    orders[index].statusHistory.push({ status: 'refunded', timestamp: new Date().toISOString() });
-    saveOrders(orders);
+    // Update status in DB
+    order.status = 'refunded';
+    order.statusHistory.push({ status: 'refunded', timestamp: new Date().toISOString() });
+    await saveOrder(order);
 
     res.json({ success: true, refundDetails: data });
   } catch (err) {
-    console.error('Refund process error:', err.message); // Log caught errors
+    console.error('Refund process error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
 /* ─── ORDER API ─────────────────────────────────────────── */
-app.get('/api/orders', isAdmin, (req, res) => {
-  const orders = loadOrders();
+app.get('/api/orders', isAdmin, async (req, res) => {
+  const orders = await loadOrders();
   res.json(orders);
 });
 
-app.delete('/api/orders', isAdmin, (req, res) => {
-  saveOrders([]);
+app.delete('/api/orders', isAdmin, async (req, res) => {
+  const { error } = await supabase.from(ORDERS_TABLE).delete().neq('id', '');
+  if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true });
 });
 
-app.get('/api/orders/:id', isAdmin, (req, res) => {
-  const order = getOrderById(req.params.id);
+app.get('/api/orders/:id', isAdmin, async (req, res) => {
+  const order = await getOrderById(req.params.id);
   if (!order) return res.status(404).json({ error: 'Order not found' });
   res.json(order);
 });
 
-app.put('/api/orders/:id/status', isAdmin, (req, res) => {
+app.put('/api/orders/:id/status', isAdmin, async (req, res) => {
   const { id } = req.params;
   const { status, shippingTrackingUrl } = req.body;
-  const orders = loadOrders();
-  const index = orders.findIndex(o => o.id === id);
+  const order = await getOrderById(id);
 
-  if (index === -1) return res.status(404).json({ error: 'Order not found' });
+  if (!order) return res.status(404).json({ error: 'Order not found' });
 
-  const order = orders[index];
   const oldStatus = order.status;
-
-  order.status = status || order.status;
-  order.shippingTrackingUrl = shippingTrackingUrl !== undefined ? shippingTrackingUrl : order.shippingTrackingUrl;
+  if (status) order.status = status;
+  if (shippingTrackingUrl !== undefined) order.shippingTrackingUrl = shippingTrackingUrl;
 
   if (status && status !== oldStatus) {
     order.statusHistory.push({
@@ -729,15 +787,16 @@ app.put('/api/orders/:id/status', isAdmin, (req, res) => {
       timestamp: new Date().toISOString()
     });
     // Send status update email
-    sendStatusUpdateEmail(order);
+    await sendStatusUpdateEmail(order);
   }
 
-  saveOrders(orders);
+  await saveOrder(order);
   res.json({ success: true, order });
 });
 
 app.post('/api/orders/:id/resend-confirmation', isAdmin, async (req, res) => {
-  const { id } = req.params;  const order = getOrderById(id);
+  const { id } = req.params;
+  const order = await getOrderById(id);
   if (!order) return res.status(404).json({ error: 'Order not found' });
 
   const sent = await sendCustomerConfirmation(order);
@@ -748,21 +807,20 @@ app.post('/api/orders/:id/resend-confirmation', isAdmin, async (req, res) => {
   }
 });
 
-app.get('/api/orders/customer/:email', (req, res) => {
-  const orders = getOrdersByEmail(req.params.email);
+app.get('/api/orders/customer/:email', async (req, res) => {
+  const orders = await getOrdersByEmail(req.params.email);
   res.json(orders);
 });
 
-app.get('/api/orders/lookup', (req, res) => {
+app.get('/api/orders/lookup', async (req, res) => {
   const { orderId, email } = req.query;
   if (!orderId || !email) return res.status(400).json({ error: 'orderId and email are required' });
 
-  const order = loadOrders().find(o => 
-    o.id.toLowerCase() === orderId.toLowerCase() && 
-    o.customerEmail.toLowerCase() === email.toLowerCase()
-  );
+  const order = await getOrderById(orderId);
 
-  if (!order) return res.status(404).json({ error: 'Order not found or email mismatch.' });
+  if (!order || order.customerEmail.toLowerCase() !== email.toLowerCase()) {
+    return res.status(404).json({ error: 'Order not found or email mismatch.' });
+  }
   res.json(order);
 });
 
@@ -775,11 +833,5 @@ app.listen(PORT, () => {
   if (!emailEnabled) {
     console.log('\n📧 Email not configured.');
     console.log('   Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, ADMIN_EMAIL to enable email notifications.\n');
-    console.log('   Gmail Setup Example:');
-    console.log('   SMTP_HOST=smtp.gmail.com');
-    console.log('   SMTP_PORT=587');
-    console.log('   SMTP_USER=your_email@gmail.com');
-    console.log('   SMTP_PASS=your_app_password');
-    console.log('   ADMIN_EMAIL=admin@example.com\n');
   }
 });

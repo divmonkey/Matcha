@@ -200,7 +200,13 @@ async function loadOrders() {
 
 function updateStats(orders) {
   const totalOrders = orders.length;
-  const totalRevenue = orders.reduce((s, o) => s + (o.total || 0), 0);
+  const totalRevenue = orders.reduce((s, o) => {
+    // Only add to revenue if the order is NOT refunded
+    if (o.status !== 'refunded') {
+      return s + (o.total || 0);
+    }
+    return s;
+  }, 0);
   const today = new Date().toDateString();
   const ordersToday = orders.filter(o => new Date(o.createdAt).toDateString() === today).length;
 

@@ -96,14 +96,14 @@ PHASE 4: DATA MODEL UPDATES
 
 PHASE 5: SUPABASE MIGRATION
 ================================================================================
-- [ ] Initialize Supabase project & configure client in index.js
-- [ ] Define Supabase table schemas (customers, orders)
-- [ ] Enable RLS on Supabase tables
-- [ ] Create data migration script (JSON to Supabase)
-- [ ] Execute data migration script
-- [ ] Refactor backend APIs to use Supabase client
-- [ ] Update frontend to use Supabase client (if applicable for reads/writes)
-- [ ] Cleanup legacy JSON files
+[X] Initialize Supabase project & configure client in index.js
+[X] Define Supabase table schemas (customers, orders)
+[X] Enable RLS on Supabase tables
+[X] Create data migration script (JSON to Supabase)
+[X] Execute data migration script
+[X] Refactor backend APIs to use Supabase client
+[ ] Update frontend to use Supabase client (if applicable for reads/writes)
+[ ] Cleanup legacy JSON files
 
 IMPLEMENTATION SEQUENCE
 ================================================================================
@@ -119,8 +119,11 @@ COMPLETED:
 8. Phase 2.2 (Customer Order Display) - customer detail view
 9. Phase 1.4 (CSV Export) - admin export feature
 10. Phase 3.2 (Resend Confirmation) - polish
-11. **Implemented Refund System** (backend API, admin trigger, PayPal integration)
-12. **Added Admin Dashboard Order Cleanup** ("Delete All Orders" button)
+11. Implemented Refund System (backend API, admin trigger, PayPal integration)
+12. Added Admin Dashboard Order Cleanup ("Delete All Orders" button)
+13. **Phase 5: Supabase Migration** (Full backend refactor and data migration)
+14. **Checkout & Email Verification** (Fixed checkout crash and verified MailPit delivery)
+15. **Revenue Calculation Fix** (Refunded orders excluded from total revenue)
 
 NOTES
 ================================================================================
